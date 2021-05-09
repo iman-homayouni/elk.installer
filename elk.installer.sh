@@ -38,8 +38,10 @@ function check {
 
 
     # CHECK CONFIGURATION VARIABLES # --------------------------------------------------------------------------------------------------------------------- #
-    [ -z "$proxy_address" ] && echo "\e[91m [>>] proxy_address VARIABLE IS EMPTY \e[0m"  && exit 1
-    [ -z "$proxy_port" ]    && echo "\e[91m [>>] proxy_port VARIABLE IS EMPTY \e[0m"     && exit 1
+    [ -z "$proxy_address" ] && echo "\e[91m [>>] proxy_address VARIABLE IS EMPTY \e[0m"         && exit 1
+    [ -z "$proxy_port" ]    && echo "\e[91m [>>] proxy_port VARIABLE IS EMPTY \e[0m"            && exit 1
+    [ -z "$kibana_username" ] && echo "\e[91m [>>] kibana_username VARIABLE IS EMPTY \e[0m"     && exit 1
+    [ -z "$kibana_password" ]    && echo "\e[91m [>>] kibana_password VARIABLE IS EMPTY \e[0m"  && exit 1
     # ----------------------------------------------------------------------------------------------------------------------------------------------------- #
 }
 
@@ -207,7 +209,7 @@ cp /etc/kibana/kibana.yml /etc/kibana/kibana.yml.$RANDOM.backup
 
 # CONFIGURE KIBANA # ------------------------------------------------------------------------------------------------------------------------------------- #
 echo -e "server.port: 5601" >> /etc/kibana/kibana.yml
-echo -e "server.host: $HOSTNAME" >> /etc/kibana/kibana.yml
+echo -e "server.host: 127.0.0.1" >> /etc/kibana/kibana.yml
 echo -e 'elasticsearch.hosts: ["http://localhost:9200"]' >> /etc/kibana/kibana.yml
 # --------------------------------------------------------------------------------------------------------------------------------------------------------- #
 
@@ -226,7 +228,8 @@ systemctl status kibana
 
 
 # CREATE ACCESS [USERNAME AND PASSWORD] FOR CONNECTING TO NGINX WEB SERVER # ------------------------------------------------------------------------------ #
-echo "admin:$(openssl passwd -apr1)" | tee -a /etc/nginx/htpasswd.users
+rm -rf /etc/nginx/.htpasswd &> /dev/null
+htpasswd -cdb /etc/nginx/.htpasswd $kibana_username $kibana_password
 # --------------------------------------------------------------------------------------------------------------------------------------------------------- #
 
 
@@ -245,7 +248,7 @@ server {
     # server_name $HOSTNAME;
 
     auth_basic "Restricted Access";
-    auth_basic_user_file /etc/nginx/htpasswd.users;
+    auth_basic_user_file /etc/nginx/.htpasswd;
 
     location / {
         proxy_pass http://127.0.0.1:5601;
@@ -340,7 +343,7 @@ filebeat setup --index-management -E output.logstash.enabled=false -E 'output.el
 systemctl start filebeat
 # --------------------------------------------------------------------------------------------------------------------------------------------------------- #
 
-
+clear
 
 # CHECK ALL INDICIES # ------------------------------------------------------------------------------------------------------------------------------------ #
 curl -sXGET http://localhost:9200/_cat/indices?v
