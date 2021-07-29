@@ -53,7 +53,7 @@ apt-get -y dist-upgrade
 apt -y autoremove
 apt-get -y -f install
 apt-get clean
-apt-get install net-tools curl wget
+apt-get install -y net-tools curl wget
 apt-get install -y lsb-release &> /dev/null
 # --------------------------------------------------------------------------------------------------------------------------------------------------------- #
 
